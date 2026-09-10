@@ -1,0 +1,41 @@
+name: Build SMAPILoader APK
+on:
+  push:
+    branches: [ main ]   # push到main分支自动触发编译
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:      # 支持网页上手动点击运行
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 7 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '7.0.x'
+
+      - name: Install MAUI Workload
+        run: dotnet workload install android maui
+
+      - name: Restore nuget packages
+        run: dotnet restore
+
+      - name: Dotnet Publish generate Release APK
+        run: |
+          dotnet publish ./SMAPIGameLoader -c Release -f net7.0-android \
+          --self-contained true \
+          -p:AndroidPackageFormat=apk \
+          -p:AndroidSigningKeyStore= \
+          -p:AndroidSigningKeyAlias= \
+          -p:AndroidSigningKeyStorePassword= \
+          -p:AndroidSigningKeyAliasPassword=
+
+      - name: Upload compiled APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMAPILoader-build-apk
+          path: SMAPIGameLoader/bin/Release/net7.0-android/publish/*.apk
